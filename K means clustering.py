@@ -6,8 +6,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import PowerTransformer
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.preprocessing import LabelEncoder
-from sklearn import linear_model
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.cluster import KMeans
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, mean_squared_error,accuracy_score
 import pandas as pd
@@ -28,44 +27,44 @@ total_data = total_data + 1
 X = total_data.iloc[:,0:6]
 y = total_data.iloc[:,6]
 
-#increase the number of features to reduce the probability of underfitting
-X["x1x2"] = X.iloc[:,1]/X.iloc[:,3]
-X["MainSafe"] = X.iloc[:,1]/X.iloc[:,5]
-X["bootsafe"] = X.iloc[:,4]/X.iloc[:,5]
-X["PersonsSafe"] = X.iloc[:,3]/X.iloc[:,5]
+# #increase the number of features to reduce the probability of underfitting
+# X["x1x2"] = X.iloc[:,1]/X.iloc[:,3]
+# X["MainSafe"] = X.iloc[:,1]/X.iloc[:,5]
+# X["bootsafe"] = X.iloc[:,4]/X.iloc[:,5]
+# X["PersonsSafe"] = X.iloc[:,3]/X.iloc[:,5]
 
 #Note: the above added featuers gave better performance with the poly features generator
 
-#creation of polynomial features
-poly = PolynomialFeatures(2)
-X = poly.fit_transform(X)
+# #creation of polynomial features
+# poly = PolynomialFeatures(2)
+# X = poly.fit_transform(X)
 
 #splitting the data into train and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=43)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=43)
 
 # #we need to normalize the data
 # scaler = MinMaxScaler()
 # X_train = scaler.fit_transform(X_train)
 # X_test = scaler.fit_transform(X_test)
 
+#implementing elbow method to find optimal value for k
+error = []
+for i in range(1,11):
+    kmeans = KMeans(n_clusters=i).fit(X_train)
+    kmeans.fit(X)
+    error.append(kmeans.inertia_)
+import matplotlib.pyplot as plt
+plt.plot(range(1,11), error)
+plt.show()
 
-scores = {}
 
-for k in range(2, 30):
-    clf = KNeighborsClassifier(n_neighbors=k)
-    clf.fit(X_train, y_train)
+#training the model using unsupervised learning
+cluster = KMeans(n_clusters=4)
+model =cluster.fit(X_train)
+y_pred = model.predict(X_test,y_test)
 
-    training_score = clf.score(X_train, y_train)
-    test_score = clf.score(X_test, y_test)
-    scores[k] = [training_score, test_score]
 
-for keys, values in scores.items():
-    print(keys, ':', values)
-
-# from the model evaluation, we will choose k as 7
-k = 7
-clf = KNeighborsClassifier(n_neighbors=k)
-clf.fit(X_train, y_train)
-training_score = clf.score(X_train, y_train)
-test_score = clf.score(X_test, y_test)
-print(training_score,test_score)
+#Model Performance
+print("Mean Sq Err: %.2f" % mean_squared_error(y_test,y_pred))
+print("accuracy: ", model.score(X_train,y_train))
+print("accuracy: ", model.score(X_test,y_test))
